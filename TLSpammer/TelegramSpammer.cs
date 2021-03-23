@@ -15,10 +15,15 @@ namespace TLSpammer
         private readonly TelegramClient telegramClient;
         private readonly string login;
         private TLUser user;
-        public TelegramSpammer(int appId, string appHash, string login)
+        private readonly IEnumerable<string> listOfChats;
+        private readonly string textMessage;
+        private List<TLAbsChat> chats;
+        public TelegramSpammer(int appId, string appHash, string login, IEnumerable<string> listOfChats, string TextMessage)
         {
             this.login = login;
             this.telegramClient = new TelegramClient(appId, appHash);
+            this.listOfChats = listOfChats;
+            this.textMessage = TextMessage;
         }
 
         public async Task<string> InitTelegramAsync()
@@ -34,26 +39,45 @@ namespace TLSpammer
 
         public async Task StartSpammerAsync()
         {
+            chats = new List<TLAbsChat>();
             try
             {
-                TLVector<TLAbsChat> chats = new TLVector<TLAbsChat>();
+                TLVector<TLAbsChat> parsedchats = new TLVector<TLAbsChat>();
                 try
                 {
                     var dialogs = (TLDialogsSlice)await telegramClient.GetUserDialogsAsync();
-                    chats = dialogs.Chats;
+                    parsedchats = dialogs.Chats;
                 }
                 catch
                 {
                     var dialogs = (TLDialogs)await telegramClient.GetUserDialogsAsync();
-                    chats = dialogs.Chats;
+                    parsedchats = dialogs.Chats;
                 }
                 finally
                 {
-                    foreach (var chat in chats)
+                    foreach (var chat in parsedchats)
                     {
                         if (chat is TLChannel)
                         {
-                            
+                            if (listOfChats.Contains((chat as TLChannel).Title))
+                            {
+                                chats.Add(chat);
+                            }
+                        }
+
+                        if (chat is TLChannelForbidden)
+                        {
+                            if (listOfChats.Contains((chat as TLChannelForbidden).Title))
+                            {
+                                chats.Add(chat);
+                            }
+                        }
+                        if (chat is TLChat)
+                        {
+                            if (listOfChats.Contains((chat as TLChat).Title))
+                            {
+                                chats.Add(chat);
+                            }
                         }
                     }
                 }
@@ -61,6 +85,34 @@ namespace TLSpammer
             catch (Exception exc)
             {
 
+            }
+
+            await SendMessagesInChatAsync();
+        }
+
+        private async Task SendMessagesInChatAsync()
+        {
+            foreach (var selectedChat in chats)
+            {
+                TLAbsInputPeer messageTarget = null;
+                if (selectedChat is TLChat)
+                {
+                    messageTarget = new TLInputPeerChat() {ChatId = (selectedChat as TLChat).Id};
+                }
+                if (selectedChat is TLChannel)
+                {
+                    var schid = (selectedChat as TLChannel);
+                    if (schid.AccessHash.HasValue)
+                    {
+                        messageTarget = new TLInputPeerChannel()
+                            {AccessHash = schid.AccessHash.Value, ChannelId = schid.Id};
+                    }
+                }
+
+                if (messageTarget != null)
+                {
+                    await telegramClient.SendMessageAsync(messageTarget, textMessage);
+                }
             }
         }
         public async Task<bool> LoginWithCodeAsync(string code, string hash)

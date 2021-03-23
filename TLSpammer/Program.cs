@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using TLSharp.Core;
 
@@ -10,7 +11,7 @@ namespace TLSpammer
         {
             //1630560
             //4cea02b478b137866d6b72c660cd9280
-            TelegramSpammer tlSpammer = new TelegramSpammer(1630560, "4cea02b478b137866d6b72c660cd9280", "+380983860743");
+            TelegramSpammer tlSpammer = new TelegramSpammer(1630560, "4cea02b478b137866d6b72c660cd9280", "+380983860743", new List<string>(){"TestGroup"}, "Test");
             string codeRequestResult = await tlSpammer.InitTelegramAsync();
             if (!string.IsNullOrEmpty(codeRequestResult))
             {
