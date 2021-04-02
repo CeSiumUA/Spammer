@@ -1,4 +1,6 @@
 ﻿@page "/"
+@using TLSpammer.WEB.Services
+@inject TelegramService telegramService;
 
 <AuthorizeView>
     <Authorized>
@@ -9,3 +11,7 @@
     </NotAuthorized>
 </AuthorizeView>
 
+@code
+{
+    
+}
