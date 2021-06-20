@@ -1,17 +1,94 @@
 ﻿@page "/"
 @using TLSpammer.WEB.Services
+@using TeleSharp.TL
 @inject TelegramService telegramService;
 
 <AuthorizeView>
     <Authorized>
-        <h2>Authed</h2>
+        <h2>Добро пожаловать! :)</h2>
+        <div class="input-group mb-3">
+            <input type="text" class="form-control" @bind-value="telegramService.Login" placeholder="Номер телефона" aria-label="Phone number" aria-describedby="basic-addon2">
+            <div class="input-group-append">
+                <button class="btn btn-outline-secondary" @onclick="LoginToTelegram" type="button">Войти</button>
+            </div>
+        </div>
+        @if (showCodeInputField)
+        {
+            if (cloudPasswordProtected)
+            {
+                <label for="code-input" style="color: red">Your account is password protected!</label>
+            }
+            <div class="input-group mb-3">
+                @if (cloudPasswordProtected)
+                {
+                    <input type="password" class="form-control" @bind-value="code" id="code-input" placeholder="Код" aria-label="Code" aria-describedby="basic-addon2">
+                }
+                else
+                {
+                    <input type="text" class="form-control" @bind-value="code" id="code-input" placeholder="Код" aria-label="Code" aria-describedby="basic-addon2">
+                }
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary" @onclick="ApplyTelegramCode" type="button">Войти</button>
+                </div>
+            </div>
+        }
+        <table class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
+            <thead>
+                <tr>
+                    <th class="th-sm">Имя
+                    </th>
+                    <th class="th-sm">В рассылке
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var chat in telegramService.SelectedChats)
+            {
+                <tr>
+                    <td>@chat.Name</td>
+                    <td><InputCheckbox @bind-Value="chat.IsSelected"></InputCheckbox></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+
     </Authorized>
     <NotAuthorized>
-        <h2>Not Authed</h2>
+        <h2>Доступ запрещен! Пожалуйста, выполните вход!</h2>
     </NotAuthorized>
 </AuthorizeView>
 
 @code
 {
-    
+    private bool showCodeInputField = false;
+    private bool cloudPasswordProtected = false;
+    private string code = "";
+    protected override async Task OnInitializedAsync()
+    {
+        base.OnInitializedAsync();
+        await LoginToTelegram();
+        await GetUserChats();
+    }
+
+    public async Task LoginToTelegram()
+    {
+        this.showCodeInputField = await telegramService.InitTelegramAsync(telegramService.Login);
+    }
+
+    public async Task ApplyTelegramCode()
+    {
+        if (!cloudPasswordProtected)
+        {
+            this.cloudPasswordProtected = !(await telegramService.LoginWithCodeAsync(code));
+        }
+        else
+        {
+            await this.telegramService.LoginWithPasswordAsync(code);
+        }
+    }
+
+    public async Task GetUserChats()
+    {
+        await telegramService.GetUserChats();
+    }
 }

@@ -33,3 +33,6 @@ msbuild.wrn
 # Visual Studio 2015
 .vs/
 /TLSpammer.WEB/indexdb.db
+/TLSpammer.WEB/session.dat
+/TLSpammer.WEB/indexdb.db-shm
+/TLSpammer.WEB/indexdb.db-wal

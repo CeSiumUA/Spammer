@@ -15,6 +15,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using TLSpammer.WEB.Areas.Identity;
 using TLSpammer.WEB.Data;
+using TLSpammer.WEB.Services;
 
 namespace TLSpammer.WEB
 {
@@ -39,7 +40,7 @@ namespace TLSpammer.WEB
             services.AddServerSideBlazor();
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
             services.AddDatabaseDeveloperPageExceptionFilter();
-            services.AddSingleton<WeatherForecastService>();
+            services.AddSingleton<TelegramService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
