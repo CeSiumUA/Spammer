@@ -46,7 +46,7 @@
             {
                 <tr>
                     <td>@chat.Name</td>
-                    <td><InputCheckbox @bind-Value="chat.IsSelected"></InputCheckbox></td>
+                    <td><input type="checkbox" @onchange="((args) => telegramService.SaveChangesAsync())" Value="chat.IsSelected"/></td>
                 </tr>
             }
             </tbody>
@@ -65,8 +65,7 @@
     private string code = "";
     protected override async Task OnInitializedAsync()
     {
-        base.OnInitializedAsync();
-        await LoginToTelegram();
+        await base.OnInitializedAsync();
         await GetUserChats();
     }
 
@@ -89,6 +88,7 @@
 
     public async Task GetUserChats()
     {
+        await LoginToTelegram();
         await telegramService.GetUserChats();
     }
 }

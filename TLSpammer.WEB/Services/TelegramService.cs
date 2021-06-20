@@ -17,22 +17,28 @@ namespace TLSpammer.WEB.Services
         private TelegramClient telegramClient;
         public string Login { get; set; }
         public string LastPhoneCodeHash;
-        public List<SelectionChat> SelectedChats = new List<SelectionChat>();
+        public List<CheckedChat> SelectedChats { get; set; }
         private TLUser user;
         private IServiceProvider serviceProvider;
         public TelegramService(IServiceProvider serviceProvider)
         {
             this.serviceProvider = serviceProvider;
             this.telegramClient = new TelegramClient(1630560, "4cea02b478b137866d6b72c660cd9280");
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                SelectedChats = dbContextService.SelectedChats.ToList();
+            }
         }
 
         public async Task<bool> InitTelegramAsync(string login)
         {
+            await telegramClient.ConnectAsync();
             if (!string.IsNullOrEmpty(login))
             {
                 //if (!telegramClient.IsConnected)
                 //{
-                    await telegramClient.ConnectAsync();
+                    
                 //}
 
                 this.LastPhoneCodeHash = await CheckForCodeRequest(login);
@@ -73,12 +79,6 @@ namespace TLSpammer.WEB.Services
 
         public async Task GetUserChats()
         {
-            List<CheckedChat> checkedChats;
-            using (var scope = serviceProvider.CreateScope())
-            {
-                var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                checkedChats = await dbContextService.SelectedChats.ToListAsync();
-            }
             if (telegramClient.IsUserAuthorized() && telegramClient.IsConnected)
             {
                 List<SelectionChat> chats = new List<SelectionChat>();
@@ -138,12 +138,28 @@ namespace TLSpammer.WEB.Services
                         }
                     }
                 }
-                SelectedChats.Concat(chats.Select(x =>
+                using (var scope = serviceProvider.CreateScope())
                 {
-                    var val = chats.FirstOrDefault(y => y.Id == x.Id)?.IsSelected;
-                    x.IsSelected = val.HasValue ? val.Value : false;
-                    return x;
-                }));
+                    var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    foreach (var cht in chats)
+                    {
+                        if (!SelectedChats.Exists(x => x.Id == cht.Id))
+                        {
+                            SelectedChats.Add(cht);
+                            dbContextService.SelectedChats.Add(cht);
+                        }
+                    }
+                    await dbContextService.SaveChangesAsync();
+                }
+            }
+        }
+        public async Task SaveChangesAsync()
+        {
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                dbContextService.UpdateRange(this.SelectedChats);
+                await dbContextService.SaveChangesAsync();
             }
         }
     }
