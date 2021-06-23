@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Components;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
@@ -153,8 +154,9 @@ namespace TLSpammer.WEB.Services
                 }
             }
         }
-        public async Task SaveChangesAsync()
+        public async Task SaveChangesAsync(ChangeEventArgs args, CheckedChat checkedChat)
         {
+            this.SelectedChats.FirstOrDefault(x => x.Id == checkedChat.Id).IsSelected = (bool) args.Value;
             using (var scope = serviceProvider.CreateScope())
             {
                 var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();

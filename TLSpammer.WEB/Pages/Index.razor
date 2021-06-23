@@ -46,7 +46,14 @@
             {
                 <tr>
                     <td>@chat.Name</td>
-                    <td><input type="checkbox" @onchange="((args) => telegramService.SaveChangesAsync())" Value="chat.IsSelected"/></td>
+                    @if (chat.IsSelected)
+                    {
+                        <td><input type="checkbox" @onchange="((args) => telegramService.SaveChangesAsync(args, chat))" checked /></td>
+                    }
+                    else
+                    {
+                        <td><input type="checkbox" @onchange="((args) => telegramService.SaveChangesAsync(args, chat))"/></td>
+                    }
                 </tr>
             }
             </tbody>
