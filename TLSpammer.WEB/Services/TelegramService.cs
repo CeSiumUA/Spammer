@@ -76,6 +76,7 @@ namespace TLSpammer.WEB.Services
         }
         private TLUser user;
         private IServiceProvider serviceProvider;
+        private IScheduler scheduler;
         public TelegramService(IServiceProvider serviceProvider)
         {
             this.serviceProvider = serviceProvider;
@@ -84,8 +85,10 @@ namespace TLSpammer.WEB.Services
             {
                 var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             }
+            this.scheduler = StdSchedulerFactory.GetDefaultScheduler().Result;
+            scheduler.JobFactory = new SenderJobFactory(serviceProvider);
+            scheduler.Start().Wait();
         }
-
         public async Task<bool> InitTelegramAsync(string login)
         {
             await telegramClient.ConnectAsync();
@@ -118,23 +121,25 @@ namespace TLSpammer.WEB.Services
         {
             if (!_senderStarted)
             {
-                IScheduler scheduler = await StdSchedulerFactory.GetDefaultScheduler();
-                scheduler.JobFactory = new SenderJobFactory(serviceProvider);
-                await scheduler.Start();
-
                 IJobDetail job = JobBuilder.Create<SenderJob>().Build();
                 var todayTimeOption = (new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, this.TimeOption.Time.Hour, this.TimeOption.Time.Minute, this.TimeOption.Time.Second)).ToUniversalTime();
-                //ITrigger trigger = TriggerBuilder.Create()
-                //    .WithIdentity("messages_sender")
-                //    .StartAt(todayTimeOption)
-                //    .WithSimpleSchedule(x => x.WithIntervalInHours(24).RepeatForever()).Build();
+                if(DateTime.Now.ToUniversalTime() > todayTimeOption)
+                {
+                    todayTimeOption = todayTimeOption.AddDays(1);
+                }
                 ITrigger trigger = TriggerBuilder.Create()
                    .WithIdentity("messages_sender")
                    .StartAt(todayTimeOption)
-                   .WithSimpleSchedule(x => x.WithIntervalInHours(24).RepeatForever()).Build();
+                   .WithSimpleSchedule(x => x.WithIntervalInSeconds(24).RepeatForever()).Build();
                 await scheduler.ScheduleJob(job, trigger);
                 _senderStarted = true;
             }
+        }
+        private async Task ResetScheduler()
+        {
+            await this.scheduler.UnscheduleJob(new TriggerKey("messages_sender"));
+            _senderStarted = false;
+            await StartScheduler();
         }
         public async Task<bool> LoginWithCodeAsync(string code)
         {
@@ -159,6 +164,7 @@ namespace TLSpammer.WEB.Services
                 dbContextService.Update(timeOption);
                 dbContextService.SaveChanges();
             }
+            ResetScheduler().Wait();
         }
         public void UpdateTextData(string text)
         {
