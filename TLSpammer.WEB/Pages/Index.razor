@@ -32,6 +32,9 @@
                 </div>
             </div>
         }
+        <div class="input-group mb-3">
+            <input type="time"  class="form-control" @bind-value="SpamTime" />
+        </div>
         <table class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
             <thead>
                 <tr>
@@ -74,6 +77,18 @@
     {
         await base.OnInitializedAsync();
         await GetUserChats();
+    }
+    
+    public DateTime SpamTime
+    {
+        get
+        {
+            return this.telegramService.TimeOption.Time;
+        }
+        set
+        {
+            this.telegramService.UpdateTime(value);
+        }
     }
 
     public async Task LoginToTelegram()

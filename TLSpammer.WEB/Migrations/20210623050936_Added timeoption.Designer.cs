@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TLSpammer.WEB.Data;
 
 namespace TLSpammer.WEB.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210623050936_Added timeoption")]
+    partial class Addedtimeoption
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -241,13 +243,6 @@ namespace TLSpammer.WEB.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Times");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Time = new DateTime(2021, 6, 23, 8, 13, 8, 776, DateTimeKind.Local).AddTicks(2789)
-                        });
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>

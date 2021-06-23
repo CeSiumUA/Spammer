@@ -19,6 +19,26 @@ namespace TLSpammer.WEB.Services
         public string Login { get; set; }
         public string LastPhoneCodeHash;
         public List<CheckedChat> SelectedChats { get; set; }
+        public TimeOption TimeOption
+        {
+            get
+            {
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    return dbContextService.Times.FirstOrDefault();
+                }
+            }
+            set
+            {
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    dbContextService.Times.Update(value);
+                    dbContextService.SaveChanges();
+                }
+            }
+        }
         private TLUser user;
         private IServiceProvider serviceProvider;
         public TelegramService(IServiceProvider serviceProvider)
@@ -71,6 +91,17 @@ namespace TLSpammer.WEB.Services
             catch (Exception e)
             {
                 return false;
+            }
+        }
+        public void UpdateTime(DateTime time)
+        {
+            var timeOption = this.TimeOption;
+            timeOption.Time = time;
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                dbContextService.Update(timeOption);
+                dbContextService.SaveChanges();
             }
         }
         public async Task LoginWithPasswordAsync(string code)
