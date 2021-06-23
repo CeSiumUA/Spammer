@@ -18,6 +18,7 @@ namespace TLSpammer.WEB.Services
         private TelegramClient telegramClient;
         public string Login { get; set; }
         public string LastPhoneCodeHash;
+        private List<SelectionChat> selectionChats { get; set; }
         public List<CheckedChat> SelectedChats
         {
             get
@@ -148,13 +149,34 @@ namespace TLSpammer.WEB.Services
         {
             this.user = await telegramClient.MakeAuthWithPasswordAsync(await telegramClient.GetPasswordSetting(), code);
         }
-
+        public async Task SendNotificationsToChannelsAsync()
+        {
+            var selectedChannels = this.SelectedChats.Where(x => x.IsSelected);
+            foreach(var channel in selectedChannels)
+            {
+                if(channel.Input == ReceiverType.Channel)
+                {
+                    await this.telegramClient.SendMessageAsync(new TLInputPeerChannel()
+                    {
+                        ChannelId = channel.Id,
+                        AccessHash = selectionChats.FirstOrDefault(x => x.Id == channel.Id).AccessHash
+                    }, this.TextData.Text);
+                }
+                if(channel.Input == ReceiverType.Chat)
+                {
+                    await this.telegramClient.SendMessageAsync(new TLInputPeerChat()
+                    {
+                        ChatId = channel.Id
+                    }, this.TextData.Text);
+                }
+            }
+        }
         public async Task GetUserChats()
         {
             bool isUserAuthorized = telegramClient.IsUserAuthorized();
             if (isUserAuthorized && telegramClient.IsConnected)
             {
-                List<SelectionChat> chats = new List<SelectionChat>();
+                selectionChats = new List<SelectionChat>();
                 TLVector<TLAbsChat> parsedchats = new TLVector<TLAbsChat>();
                 try
                 {
@@ -173,52 +195,58 @@ namespace TLSpammer.WEB.Services
                         if (chat is TLChannel)
                         {
                             var channel = chat as TLChannel;
-                            if (!chats.Exists(x => x.Id == channel.Id))
+                            if (!selectionChats.Exists(x => x.Id == channel.Id))
                             {
-                                chats.Add(new SelectionChat()
+                                selectionChats.Add(new SelectionChat()
                                 {
                                     Id = channel.Id,
                                     Chat = chat,
-                                    Name = channel.Title
+                                    Name = channel.Title,
+                                    AccessHash = channel.AccessHash.HasValue ? channel.AccessHash.Value : 0,
+                                    Input = ReceiverType.Channel
                                 });
                             }
                         }
                         if (chat is TLChannelForbidden)
                         {
                             var channelForbidden = chat as TLChannelForbidden;
-                            if (!chats.Exists(x => x.Id == channelForbidden.Id))
+                            if (!selectionChats.Exists(x => x.Id == channelForbidden.Id))
                             {
-                                chats.Add(new SelectionChat()
+                                selectionChats.Add(new SelectionChat()
                                 {
                                     Id = channelForbidden.Id,
                                     Chat = chat,
-                                    Name = channelForbidden.Title
+                                    Name = channelForbidden.Title,
+                                    AccessHash = channelForbidden.AccessHash,
+                                    Input = ReceiverType.Channel
                                 });
                             }
                         }
                         if (chat is TLChatForbidden)
                         {
                             var chatForbidden = chat as TLChatForbidden;
-                            if (!chats.Exists(x => x.Id == chatForbidden.Id))
+                            if (!selectionChats.Exists(x => x.Id == chatForbidden.Id))
                             {
-                                chats.Add(new SelectionChat()
+                                selectionChats.Add(new SelectionChat()
                                 {
                                     Id = chatForbidden.Id,
                                     Chat = chat,
-                                    Name = chatForbidden.Title
+                                    Name = chatForbidden.Title,
+                                    Input = ReceiverType.Chat
                                 });
                             }
                         }
                         if (chat is TLChat)
                         {
                             var tlChat = chat as TLChat;
-                            if (!chats.Exists(x => x.Id == tlChat.Id))
+                            if (!selectionChats.Exists(x => x.Id == tlChat.Id))
                             {
-                                chats.Add(new SelectionChat()
+                                selectionChats.Add(new SelectionChat()
                                 {
                                     Id = tlChat.Id,
                                     Chat = chat,
-                                    Name = tlChat.Title
+                                    Name = tlChat.Title,
+                                    Input = ReceiverType.Chat
                                 });
                             }
                         }
@@ -228,7 +256,7 @@ namespace TLSpammer.WEB.Services
                 {
                     var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
                     var selectedChats = SelectedChats;
-                    foreach (var cht in chats)
+                    foreach (var cht in selectionChats)
                     {
                         if (!selectedChats.Exists(x => x.Id == cht.Id))
                         {

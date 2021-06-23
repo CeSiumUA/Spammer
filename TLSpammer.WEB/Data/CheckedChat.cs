@@ -10,5 +10,12 @@ namespace TLSpammer.WEB.Data
         public string Name { get; set; }
         public int Id { get; set; }
         public bool IsSelected { get; set; }
+        public long AccessHash { get; set; }
+        public ReceiverType Input { get; set; }
+    }
+    public enum ReceiverType
+    {
+        Channel = 0,
+        Chat = 1,
     }
 }
