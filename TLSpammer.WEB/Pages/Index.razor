@@ -34,6 +34,7 @@
         }
         <div class="input-group mb-3">
             <input type="time"  class="form-control" @bind-value="SpamTime" />
+            <textarea class="form-control" @bind-value:event="onchange" @bind-value="TextData"/>
         </div>
         <table class="table table-striped table-bordered table-sm" cellspacing="0" width="100%">
             <thead>
@@ -88,6 +89,17 @@
         set
         {
             this.telegramService.UpdateTime(value);
+        }
+    }
+    public string TextData
+    {
+        get
+        {
+            return this.telegramService.TextData.Text;
+        }
+        set
+        {
+            this.telegramService.UpdateTextData(value);
         }
     }
 

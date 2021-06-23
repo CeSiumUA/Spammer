@@ -10,6 +10,7 @@ namespace TLSpammer.WEB.Data
     {
         public DbSet<CheckedChat> SelectedChats { get; set; }
         public DbSet<TimeOption> Times { get; set; }
+        public DbSet<TextData> TextDatas { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
@@ -20,6 +21,11 @@ namespace TLSpammer.WEB.Data
             {
                 Id = 1,
                 Time = DateTime.Now
+            });
+            builder.Entity<TextData>().HasData(new TextData()
+            {
+                Id = 1,
+                Text = string.Empty
             });
             base.OnModelCreating(builder);
         }

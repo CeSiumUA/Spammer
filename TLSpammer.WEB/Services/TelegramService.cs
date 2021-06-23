@@ -18,7 +18,17 @@ namespace TLSpammer.WEB.Services
         private TelegramClient telegramClient;
         public string Login { get; set; }
         public string LastPhoneCodeHash;
-        public List<CheckedChat> SelectedChats { get; set; }
+        public List<CheckedChat> SelectedChats
+        {
+            get
+            {
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    return dbContextService.SelectedChats.ToList();
+                }
+            }
+        }
         public TimeOption TimeOption
         {
             get
@@ -39,6 +49,26 @@ namespace TLSpammer.WEB.Services
                 }
             }
         }
+        public TextData TextData
+        {
+            get
+            {
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    return dbContextService.TextDatas.FirstOrDefault();
+                }
+            }
+            set
+            {
+                using (var scope = serviceProvider.CreateScope())
+                {
+                    var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    dbContextService.TextDatas.Update(value);
+                    dbContextService.SaveChanges();
+                }
+            }
+        }
         private TLUser user;
         private IServiceProvider serviceProvider;
         public TelegramService(IServiceProvider serviceProvider)
@@ -48,7 +78,6 @@ namespace TLSpammer.WEB.Services
             using (var scope = serviceProvider.CreateScope())
             {
                 var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                SelectedChats = dbContextService.SelectedChats.ToList();
             }
         }
 
@@ -59,7 +88,7 @@ namespace TLSpammer.WEB.Services
             {
                 //if (!telegramClient.IsConnected)
                 //{
-                    
+
                 //}
 
                 this.LastPhoneCodeHash = await CheckForCodeRequest(login);
@@ -104,6 +133,17 @@ namespace TLSpammer.WEB.Services
                 dbContextService.SaveChanges();
             }
         }
+        public void UpdateTextData(string text)
+        {
+            var textData = this.TextData;
+            textData.Text = text;
+            using (var scope = serviceProvider.CreateScope())
+            {
+                var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                dbContextService.Update(textData);
+                dbContextService.SaveChanges();
+            }
+        }
         public async Task LoginWithPasswordAsync(string code)
         {
             this.user = await telegramClient.MakeAuthWithPasswordAsync(await telegramClient.GetPasswordSetting(), code);
@@ -111,18 +151,19 @@ namespace TLSpammer.WEB.Services
 
         public async Task GetUserChats()
         {
-            if (telegramClient.IsUserAuthorized() && telegramClient.IsConnected)
+            bool isUserAuthorized = telegramClient.IsUserAuthorized();
+            if (isUserAuthorized && telegramClient.IsConnected)
             {
                 List<SelectionChat> chats = new List<SelectionChat>();
                 TLVector<TLAbsChat> parsedchats = new TLVector<TLAbsChat>();
                 try
                 {
-                    var dialogs = (TLDialogsSlice) await telegramClient.GetUserDialogsAsync();
+                    var dialogs = (TLDialogsSlice) await telegramClient.GetUserDialogsAsync(limit: Int32.MaxValue);
                     parsedchats = dialogs.Chats;
                 }
                 catch
                 {
-                    var dialogs = (TLDialogs) await telegramClient.GetUserDialogsAsync();
+                    var dialogs = (TLDialogs) await telegramClient.GetUserDialogsAsync(limit: Int32.MaxValue);
                     parsedchats = dialogs.Chats;
                 }
                 finally
@@ -155,6 +196,19 @@ namespace TLSpammer.WEB.Services
                                 });
                             }
                         }
+                        if (chat is TLChatForbidden)
+                        {
+                            var chatForbidden = chat as TLChatForbidden;
+                            if (!chats.Exists(x => x.Id == chatForbidden.Id))
+                            {
+                                chats.Add(new SelectionChat()
+                                {
+                                    Id = chatForbidden.Id,
+                                    Chat = chat,
+                                    Name = chatForbidden.Title
+                                });
+                            }
+                        }
                         if (chat is TLChat)
                         {
                             var tlChat = chat as TLChat;
@@ -173,11 +227,12 @@ namespace TLSpammer.WEB.Services
                 using (var scope = serviceProvider.CreateScope())
                 {
                     var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+                    var selectedChats = SelectedChats;
                     foreach (var cht in chats)
                     {
-                        if (!SelectedChats.Exists(x => x.Id == cht.Id))
+                        if (!selectedChats.Exists(x => x.Id == cht.Id))
                         {
-                            SelectedChats.Add(cht);
+                            selectedChats.Add(cht);
                             dbContextService.SelectedChats.Add(cht);
                         }
                     }
@@ -187,11 +242,12 @@ namespace TLSpammer.WEB.Services
         }
         public async Task SaveChangesAsync(ChangeEventArgs args, CheckedChat checkedChat)
         {
-            this.SelectedChats.FirstOrDefault(x => x.Id == checkedChat.Id).IsSelected = (bool) args.Value;
+            var chatToUpdate = this.SelectedChats.FirstOrDefault(x => x.Id == checkedChat.Id);
+            chatToUpdate.IsSelected = (bool) args.Value;
             using (var scope = serviceProvider.CreateScope())
             {
                 var dbContextService = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-                dbContextService.UpdateRange(this.SelectedChats);
+                dbContextService.Update(chatToUpdate);
                 await dbContextService.SaveChangesAsync();
             }
         }
