@@ -23,3 +23,57 @@ jobs:
       run: dotnet build --no-restore
     - name: Test
       run: dotnet test --no-build --verbosity normal
+    - name: Publish linux web app
+      working-directory: ./TLSpammer.WEB
+      run: dotnet publish -c Release --runtime linux-x64 --self-contained true
+    - name: Publish windows web app
+      working-directory: ./TLSpammer.WEB
+      run: dotnet publish -c Release --runtime win-x64 --self-contained true
+    - name: Publish osx web app
+      working-directory: ./TLSpammer.WEB
+      run: dotnet publish -c Release --runtime osx-x64 --self-contained true
+    - name: Archive linux publish
+      uses: thedoctor0/zip-release@master
+      with:
+        filename: 'publish-linux.tar.gz'
+        path: ./TLSpammer.WEB/bin/Release/net5.0/linux-x64/publish/
+    - name: Archive windows publish
+      uses: thedoctor0/zip-release@master
+      with:
+        filename: 'publish-windows.tar.gz'
+        path: ./TLSpammer.WEB/bin/Release/net5.0/win-x64/publish/
+    - name: Archive osx publish
+      uses: thedoctor0/zip-release@master
+      with:
+        filename: 'publish-osx.tar.gz'
+        path: ./TLSpammer.WEB/bin/Release/net5.0/osx-x64/publish/
+    - name: Release linux delivery
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: publish-linux.tar.gz
+        asset_name: TLSpammer-linux_x64
+        tag: ${{ github.ref }}
+        overwrite: true
+        body: "TLSpammer.WEB Linux release"
+        file_glob: true
+    - name: Release windows delivery
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: publish-windows.tar.gz
+        asset_name: TLSpammer.WEB-win_x64
+        tag: ${{ github.ref }}
+        overwrite: true
+        body: "TLSpammer.WEB Windows release"
+        file_glob: true
+    - name: Release osx delivery
+      uses: svenstaro/upload-release-action@v2
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: publish-osx.tar.gz
+        asset_name: TLSpammer.WEB-osx_x64
+        tag: ${{ github.ref }}
+        overwrite: true
+        body: "TLSpammer.WEB OSX release"
+        file_glob: true
