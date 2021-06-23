@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Quartz;
+using Quartz.Impl;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -9,6 +11,7 @@ using TeleSharp.TL;
 using TeleSharp.TL.Messages;
 using TLSharp.Core;
 using TLSpammer.WEB.Data;
+using TLSpammer.WEB.Quartz;
 using TLSpammer.WEB.Shared;
 
 namespace TLSpammer.WEB.Services
@@ -19,6 +22,7 @@ namespace TLSpammer.WEB.Services
         public string Login { get; set; }
         public string LastPhoneCodeHash;
         private List<SelectionChat> selectionChats { get; set; }
+        private bool _senderStarted = false;
         public List<CheckedChat> SelectedChats
         {
             get
@@ -109,6 +113,28 @@ namespace TLSpammer.WEB.Services
 
             this.Login = login;
             return null;
+        }
+        private async Task StartScheduler()
+        {
+            if (!_senderStarted)
+            {
+                IScheduler scheduler = await StdSchedulerFactory.GetDefaultScheduler();
+                scheduler.JobFactory = new SenderJobFactory(serviceProvider);
+                await scheduler.Start();
+
+                IJobDetail job = JobBuilder.Create<SenderJob>().Build();
+                var todayTimeOption = (new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, this.TimeOption.Time.Hour, this.TimeOption.Time.Minute, this.TimeOption.Time.Second)).ToUniversalTime();
+                //ITrigger trigger = TriggerBuilder.Create()
+                //    .WithIdentity("messages_sender")
+                //    .StartAt(todayTimeOption)
+                //    .WithSimpleSchedule(x => x.WithIntervalInHours(24).RepeatForever()).Build();
+                ITrigger trigger = TriggerBuilder.Create()
+                   .WithIdentity("messages_sender")
+                   .StartAt(todayTimeOption)
+                   .WithSimpleSchedule(x => x.WithIntervalInHours(24).RepeatForever()).Build();
+                await scheduler.ScheduleJob(job, trigger);
+                _senderStarted = true;
+            }
         }
         public async Task<bool> LoginWithCodeAsync(string code)
         {
@@ -267,6 +293,7 @@ namespace TLSpammer.WEB.Services
                     await dbContextService.SaveChangesAsync();
                 }
             }
+            await StartScheduler();
         }
         public async Task SaveChangesAsync(ChangeEventArgs args, CheckedChat checkedChat)
         {

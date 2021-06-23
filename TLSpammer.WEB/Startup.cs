@@ -9,12 +9,14 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Quartz;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TLSpammer.WEB.Areas.Identity;
 using TLSpammer.WEB.Data;
+using TLSpammer.WEB.Quartz;
 using TLSpammer.WEB.Services;
 
 namespace TLSpammer.WEB
@@ -38,6 +40,11 @@ namespace TLSpammer.WEB
                 .AddEntityFrameworkStores<ApplicationDbContext>();
             services.AddRazorPages();
             services.AddServerSideBlazor();
+            //services.AddQuartz(x =>
+            //{
+            //    x.UseMicrosoftDependencyInjectionJobFactory();
+            //});
+            services.AddScoped<SenderJob>();
             services.AddScoped<AuthenticationStateProvider, RevalidatingIdentityAuthenticationStateProvider<IdentityUser>>();
             services.AddDatabaseDeveloperPageExceptionFilter();
             services.AddSingleton<TelegramService>();
