@@ -15,6 +15,7 @@ namespace TLSpammer.WEB.Data
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
+            this.Database.Migrate();
         }
         protected override void OnModelCreating(ModelBuilder builder)
         {
