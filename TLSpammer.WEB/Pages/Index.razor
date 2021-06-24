@@ -46,7 +46,7 @@
                 </tr>
             </thead>
             <tbody>
-            @foreach (var chat in telegramService.SelectedChats)
+            @foreach (var chat in telegramService.SelectedChats.OrderBy(x => x.Name))
             {
                 <tr>
                     <td>@chat.Name</td>

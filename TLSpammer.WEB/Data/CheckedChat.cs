@@ -17,5 +17,7 @@ namespace TLSpammer.WEB.Data
     {
         Channel = 0,
         Chat = 1,
+        ChatForbidden = 2,
+        ChannelForbidden = 3
     }
 }

@@ -127,10 +127,13 @@ namespace TLSpammer.WEB.Services
                 {
                     todayTimeOption = todayTimeOption.AddDays(1);
                 }
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.WriteLine($"Setting trigger to {todayTimeOption} UTC. Current system time is: {DateTime.Now.ToUniversalTime()}");
+                Console.ForegroundColor = ConsoleColor.White;
                 ITrigger trigger = TriggerBuilder.Create()
                    .WithIdentity("messages_sender")
                    .StartAt(todayTimeOption)
-                   .WithSimpleSchedule(x => x.WithIntervalInSeconds(24).RepeatForever()).Build();
+                   .WithSimpleSchedule(x => x.WithIntervalInHours(12).RepeatForever()).Build();
                 await scheduler.ScheduleJob(job, trigger);
                 _senderStarted = true;
             }
@@ -184,24 +187,41 @@ namespace TLSpammer.WEB.Services
         public async Task SendNotificationsToChannelsAsync()
         {
             var selectedChannels = this.SelectedChats.Where(x => x.IsSelected);
-            foreach(var channel in selectedChannels)
+            
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("---");
+            Console.WriteLine($"Starting sending job! Sending candidates count: {selectedChannels.Count()}");
+            
+            foreach (var channel in selectedChannels)
             {
-                if(channel.Input == ReceiverType.Channel)
+                Console.WriteLine($"Sending to {channel.Name} of type {channel.Input.ToString()}...");
+                try
                 {
-                    await this.telegramClient.SendMessageAsync(new TLInputPeerChannel()
+                    if (channel.Input == ReceiverType.Channel || channel.Input == ReceiverType.ChannelForbidden)
                     {
-                        ChannelId = channel.Id,
-                        AccessHash = selectionChats.FirstOrDefault(x => x.Id == channel.Id).AccessHash
-                    }, this.TextData.Text);
+                        await this.telegramClient.SendMessageAsync(new TLInputPeerChannel()
+                        {
+                            ChannelId = channel.Id,
+                            AccessHash = selectionChats.FirstOrDefault(x => x.Id == channel.Id).AccessHash
+                        }, this.TextData.Text);
+                    }
+                    if (channel.Input == ReceiverType.Chat || channel.Input == ReceiverType.ChatForbidden)
+                    {
+                        await this.telegramClient.SendMessageAsync(new TLInputPeerChat()
+                        {
+                            ChatId = channel.Id,
+                        }, this.TextData.Text);
+                    }
                 }
-                if(channel.Input == ReceiverType.Chat)
+                catch(Exception ex)
                 {
-                    await this.telegramClient.SendMessageAsync(new TLInputPeerChat()
-                    {
-                        ChatId = channel.Id
-                    }, this.TextData.Text);
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine($"Exception occured: {Environment.NewLine} {ex.ToString()}");
+                    Console.ForegroundColor = ConsoleColor.Green;
                 }
             }
+            Console.WriteLine("---");
+            Console.ForegroundColor = ConsoleColor.White;
         }
         public async Task GetUserChats()
         {
@@ -239,35 +259,35 @@ namespace TLSpammer.WEB.Services
                                 });
                             }
                         }
-                        if (chat is TLChannelForbidden)
-                        {
-                            var channelForbidden = chat as TLChannelForbidden;
-                            if (!selectionChats.Exists(x => x.Id == channelForbidden.Id))
-                            {
-                                selectionChats.Add(new SelectionChat()
-                                {
-                                    Id = channelForbidden.Id,
-                                    Chat = chat,
-                                    Name = channelForbidden.Title,
-                                    AccessHash = channelForbidden.AccessHash,
-                                    Input = ReceiverType.Channel
-                                });
-                            }
-                        }
-                        if (chat is TLChatForbidden)
-                        {
-                            var chatForbidden = chat as TLChatForbidden;
-                            if (!selectionChats.Exists(x => x.Id == chatForbidden.Id))
-                            {
-                                selectionChats.Add(new SelectionChat()
-                                {
-                                    Id = chatForbidden.Id,
-                                    Chat = chat,
-                                    Name = chatForbidden.Title,
-                                    Input = ReceiverType.Chat
-                                });
-                            }
-                        }
+                        //if (chat is TLChannelForbidden)
+                        //{
+                        //    var channelForbidden = chat as TLChannelForbidden;
+                        //    if (!selectionChats.Exists(x => x.Id == channelForbidden.Id))
+                        //    {
+                        //        selectionChats.Add(new SelectionChat()
+                        //        {
+                        //            Id = channelForbidden.Id,
+                        //            Chat = chat,
+                        //            Name = channelForbidden.Title,
+                        //            AccessHash = channelForbidden.AccessHash,
+                        //            Input = ReceiverType.ChannelForbidden
+                        //        });
+                        //    }
+                        //}
+                        //if (chat is TLChatForbidden)
+                        //{
+                        //    var chatForbidden = chat as TLChatForbidden;
+                        //    if (!selectionChats.Exists(x => x.Id == chatForbidden.Id))
+                        //    {
+                        //        selectionChats.Add(new SelectionChat()
+                        //        {
+                        //            Id = chatForbidden.Id,
+                        //            Chat = chat,
+                        //            Name = chatForbidden.Title,
+                        //            Input = ReceiverType.ChatForbidden
+                        //        });
+                        //    }
+                        //}
                         if (chat is TLChat)
                         {
                             var tlChat = chat as TLChat;
