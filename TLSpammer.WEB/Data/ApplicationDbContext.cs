@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,18 @@ namespace TLSpammer.WEB.Data
         }
         protected override void OnModelCreating(ModelBuilder builder)
         {
+            var hasher = new PasswordHasher<IdentityUser>();
+            builder.Entity<IdentityUser>().HasData(new IdentityUser
+            {
+                Id = Guid.NewGuid().ToString(),
+                UserName = "admin@admin.com",
+                NormalizedUserName = "ADMIN@ADMIN.COM",
+                Email = "admin@admin.com",
+                NormalizedEmail = "ADMIN@ADMIN.COM",
+                EmailConfirmed = true,
+                PasswordHash = hasher.HashPassword(null, "12345Aa-"),
+                SecurityStamp = string.Empty
+            });
             builder.Entity<TimeOption>().HasData(new TimeOption()
             {
                 Id = 1,

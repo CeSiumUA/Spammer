@@ -2,15 +2,17 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TLSpammer.WEB.Data;
 
 namespace TLSpammer.WEB.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20210624072845_initialized admin")]
+    partial class initializedadmin
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -131,19 +133,19 @@ namespace TLSpammer.WEB.Migrations
                     b.HasData(
                         new
                         {
-                            Id = "527be361-aa09-4d54-a67b-033bc9f79b92",
+                            Id = "21645d62-277e-4b96-a36b-821b067f3d62",
                             AccessFailedCount = 0,
-                            ConcurrencyStamp = "a16e696f-1d28-47c0-bd24-8eb30ed561b8",
+                            ConcurrencyStamp = "bf2f8745-e6e6-4ae7-96db-baf895f795d4",
                             Email = "admin@admin.com",
                             EmailConfirmed = true,
                             LockoutEnabled = false,
-                            NormalizedEmail = "ADMIN@ADMIN.COM",
-                            NormalizedUserName = "ADMIN@ADMIN.COM",
-                            PasswordHash = "AQAAAAEAACcQAAAAEPNrrSwGtH3lkhUMEV70Zn3V4w5IKHinZMLrAI0+cmkit8VGHVFdRnwWkW08kU+q/w==",
+                            NormalizedEmail = "admin@admin.com",
+                            NormalizedUserName = "admin",
+                            PasswordHash = "AQAAAAEAACcQAAAAEApr7+5WeGyU29AzCclPSShLbO4AW+vN/AXXbQFX+bSX7MGfi25vVcoS+hRk+o19Lw==",
                             PhoneNumberConfirmed = false,
                             SecurityStamp = "",
                             TwoFactorEnabled = false,
-                            UserName = "admin@admin.com"
+                            UserName = "admin"
                         });
                 });
 
@@ -291,7 +293,7 @@ namespace TLSpammer.WEB.Migrations
                         new
                         {
                             Id = 1,
-                            Time = new DateTime(2021, 6, 24, 10, 36, 8, 756, DateTimeKind.Local).AddTicks(966)
+                            Time = new DateTime(2021, 6, 24, 10, 28, 45, 273, DateTimeKind.Local).AddTicks(4241)
                         });
                 });
 
